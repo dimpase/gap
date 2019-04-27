@@ -527,7 +527,6 @@ AC_SUBST([ZLIB_CPPFLAGS])
 AC_SUBST([ZLIB_LDFLAGS])
 AC_SUBST([ZLIB_LIBS])
 
-
 dnl Find GNU readline
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline@<:@=PREFIX@:>@],
@@ -538,7 +537,12 @@ dnl Now check if we can find GNU readline. We go to some extra efforts to
 dnl ensure it is GNU readline, and not e.g. BSD editline wrappers for
 dnl readline, which do not suffice for GAP.
 AS_IF([test "x$with_readline" != xno],[
-  READLINE_LIBS="-lreadline"
+ dnl Checking for rl_bind_keyseq rules out very old readline
+ dnl as well as editline pretending to be readline (yes, looking at you, OSX!)
+ dnl ereadline is the name of GNU readline library on OpenBSD
+ AC_SEARCH_LIBS([rl_bind_keyseq], [readline ereadline], [
+  AS_IF([test x$ac_cv_search_rl_bind_keyseq != "xnone required"],
+    [READLINE_LIBS=$ac_cv_search_rl_bind_keyseq], [READLINE_LIBS=])
   AS_CASE([x"$with_readline"],
     [xyes|x],[
       READLINE_CPPFLAGS=
@@ -552,16 +556,23 @@ AS_IF([test "x$with_readline" != xno],[
 
   dnl We check for the symbol rl_ding to distinguish GNU readline
   dnl from other readline implementation.
-  AX_CHECK_LIBRARY([READLINE], [readline/readline.h], [readline], [rl_ding], [], [], [])
-
+  case "$ac_cv_search_rl_bind_keyseq" in
+     *ereadline)
+       AX_CHECK_LIBRARY([READLINE], [ereadline/readline/readline.h], [ereadline], [rl_ding], [], [], [])
+       ;;
+     *)
+       AX_CHECK_LIBRARY([READLINE], [readline/readline.h], [readline],  [rl_ding], [], [], [])
+       ;;
+  esac
   AS_IF([test $ax_cv_have_READLINE = yes],[
     AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
   ],[
     AS_CASE([x"$with_readline"],
       [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
-      [*], [AC_MSG_FAILURE([--with-readline was given, but test for readline failed])]
+      [*], [AC_MSG_FAILURE([--with-readline was given, but further tests for readline failed])]
     )
   ])
+ ], [AC_MSG_FAILURE([--with-readline was given, but first test for readline failed])])
 ])
 
 AC_SUBST([READLINE_CPPFLAGS])
