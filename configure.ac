@@ -538,7 +538,6 @@ dnl ensure it is GNU readline, and not e.g. BSD editline wrappers for
 dnl readline, which do not suffice for GAP.
 AS_IF([test "x$with_readline" != xno],[
  dnl Checking for rl_bind_keyseq rules out very old readline
- dnl as well as editline pretending to be readline (yes, looking at you, OSX!)
  dnl ereadline is the name of GNU readline library on OpenBSD
  AC_SEARCH_LIBS([rl_bind_keyseq], [readline ereadline], [
   AS_IF([test x$ac_cv_search_rl_bind_keyseq != "xnone required"],
@@ -572,7 +571,12 @@ AS_IF([test "x$with_readline" != xno],[
       [*], [AC_MSG_FAILURE([--with-readline was given, but further tests for readline failed])]
     )
   ])
- ], [AC_MSG_FAILURE([--with-readline was given, but first test for readline failed])])
+ ],[
+   AS_CASE([x"$with_readline"],
+      [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
+      [*], [AC_MSG_FAILURE([--with-readline was given, but first test for readline failed])]
+   )
+ ])dnl AC_SEARCH_LIBS([rl_bind_keyseq] ...) ends here
 ])
 
 AC_SUBST([READLINE_CPPFLAGS])
