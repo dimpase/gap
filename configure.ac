@@ -543,34 +543,29 @@ AS_IF([test "x$with_readline" != xno],[
   AS_IF([test x$ac_cv_search_rl_bind_keyseq != "xnone required"],
     [READLINE_LIBS=$ac_cv_search_rl_bind_keyseq], [READLINE_LIBS=])
   AS_CASE([x"$with_readline"],
-    [xyes|x],[
-      READLINE_CPPFLAGS=
-      READLINE_LDFLAGS=
-    ],
+    [xyes|x], [READLINE_CPPFLAGS= READLINE_LDFLAGS=],
     [*],[
       READLINE_CPPFLAGS="-I$with_readline/include"
       READLINE_LDFLAGS="-L$with_readline/lib"
     ]
   )
 
-  dnl We check for the symbol rl_ding to distinguish GNU readline
-  dnl from other readline implementation.
-  case "$ac_cv_search_rl_bind_keyseq" in
-     *ereadline)
-       AX_CHECK_LIBRARY([READLINE], [ereadline/readline/readline.h], [ereadline], [rl_ding], [], [], [])
-       ;;
-     *)
-       AX_CHECK_LIBRARY([READLINE], [readline/readline.h], [readline],  [rl_ding], [], [], [])
-       ;;
-  esac
-  AS_IF([test $ax_cv_have_READLINE = yes],[
-    AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
-  ],[
-    AS_CASE([x"$with_readline"],
-      [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
-      [*], [AC_MSG_FAILURE([--with-readline was given, but further tests for readline failed])]
-    )
-  ])
+  dnl We check that the corresponding header is present
+  AS_CASE(["$ac_cv_search_rl_bind_keyseq"],
+     [*lereadline], [
+       AC_CHECK_HEADERS([ereadline/readline/readline.h],
+          [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libereadline])],
+          [AS_CASE([x"$with_readline"],
+            [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
+            [*], [AC_MSG_FAILURE([--with-readline was given, but further tests for readline failed])])
+	  ])],
+     [*lreadline], [
+       AC_CHECK_HEADERS([readline/readline.h],
+          [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])],
+          [AS_CASE([x"$with_readline"],
+            [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
+            [*], [AC_MSG_FAILURE([--with-readline was given, but further tests for readline failed])])
+	  ])])
  ],[
    AS_CASE([x"$with_readline"],
       [x], [READLINE_CPPFLAGS= READLINE_LDFLAGS= READLINE_LIBS=],
